@@ -1,0 +1,4 @@
+tinet up -c /mnt/c/tinet/spec_01.yaml | sh -x
+tinet conf -c /mnt/c/tinet/spec_01.yaml | sh -x
+tinet test -c /mnt/c/tinet/spec_01.yaml | sh -x
+tinet img -c /mnt/c/tinet/spec_01.yaml | dot -Tpng > /mnt/c/tinet/spec_01.png
