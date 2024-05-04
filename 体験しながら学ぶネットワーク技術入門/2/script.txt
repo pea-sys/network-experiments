@@ -1,0 +1,67 @@
+#Ethernetパケット取得
+tinet down -c /mnt/c/tinet/spec_02.yaml | sh -x
+tinet up -c /mnt/c/tinet/spec_02.yaml | sh -x
+tinet conf -c /mnt/c/tinet/spec_02.yaml | sh -x
+tinet test -c /mnt/c/tinet/spec_02.yaml | sh -x
+# パケットダンプ準備
+docker exec -it cl2 /bin/bash
+ifconfig net0
+tcpdump -i net0 -w /tmp/tinet/ethernet.pcapng ether host 02:42:ac:01:10:01
+# パケット送信
+docker exec -it cl1 /bin/bash
+ifconfig net0
+ping 192.168.11.2 -c 2
+
+#ARPパケット取得
+#パケットダンプ取得
+docker exec -it rt1 /bin/bash
+ifconfig net1
+ip neigh flush all
+ip neigh
+tcpdump -i net1 -w /tmp/tinet/arp.pcapng arp
+ip neigh
+
+#パケット送信
+docker exec -it cl3 /bin/bash
+ifconfig net0
+#ARPテーブル初期化
+ip neigh flush all
+ip neigh
+ping 192.168.11.254 -c 2
+ip neigh
+
+#レイヤー2プロトコル
+docker exec -it sw1 /bin/bash
+root@sw1:/#ovs-appctl fdb/flush sw1
+root@sw1:/#ovs-appctl fdb/show sw1
+
+
+#ポートVLAN
+docker exec -it sv1 /bin/bash
+ifconfig net0
+
+docker exec -it sv2 /bin/bash
+ifconfgi net0
+tcpdump -eni net0 ether host 02:42:ac:00:20:01
+
+docker exec -it lb1 /bin/bash
+ifconfig net0
+
+docker exec -it fw1 /bin/bash
+ifconfig net1
+tcpdump -eni net1 ether host 02:42:ac:00:20:01
+
+
+docker exec -it sw2 /bin/bash
+ovs-vsctl add-br sw2 -- set bridge sw2 datapath_type=netdev
+ovs-vsctl add-port sw2 port1 tag=2
+ovs-vsctl add-port sw2 port2 tag=2
+ovs-vsctl add-port sw2 port3 tag=1
+ovs-vsctl add-port sw2 port4 tag=1
+ovs-vsctl show
+ovs-appctl fdb/flush sw2
+ovs-appctl fdb/show sw2
+ovs-appctl fdb/show sw2
+
+#タグVLAN
+ovs-vsctl set port port3 vlan_mode=native-untagged trunks=2
